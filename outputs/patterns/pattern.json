@@ -1,0 +1,48 @@
+{
+  "garment_type": "hoodie",
+  "components": [
+    "front",
+    "back",
+    "sleeves",
+    "hood"
+  ],
+  "specification": {
+    "front": {
+      "width": 50,
+      "height": 70,
+      "seams": [
+        "shoulder",
+        "side",
+        "bottom"
+      ]
+    },
+    "back": {
+      "width": 50,
+      "height": 70,
+      "seams": [
+        "shoulder",
+        "side",
+        "bottom"
+      ]
+    },
+    "sleeves": {
+      "length": 60,
+      "width": 30,
+      "seams": [
+        "armhole",
+        "side",
+        "cuff"
+      ]
+    },
+    "hood": {
+      "width": 45,
+      "height": 35,
+      "seams": [
+        "crown",
+        "face_opening"
+      ]
+    }
+  },
+  "version": "1.0",
+  "created_by": "mock_generator"
+}

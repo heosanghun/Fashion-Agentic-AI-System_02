@@ -1,0 +1,128 @@
+{
+  "status": "failed",
+  "message": "최대 재시도 횟수에 도달했습니다.",
+  "data": {
+    "status": "completed",
+    "plan_id": "plan_20251103105852733487",
+    "steps": {
+      "1": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "analysis": {
+            "garment_type": "상의",
+            "style": "캐주얼",
+            "color": "검정색",
+            "type": "hoodie"
+          },
+          "image_path": "D:\\AI\\ChatGarment\\uploads\\test_session_browser_001_TShirt.jpg",
+          "message": "이미지 분석이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 1
+      },
+      "2": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "pattern_path": "D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+          "pattern_info": {
+            "type": "hoodie",
+            "components": [
+              "front",
+              "back",
+              "sleeves",
+              "hood"
+            ]
+          },
+          "message": "패턴 생성이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 2
+      },
+      "3": {
+        "status": "error",
+        "error": "패턴 파일을 찾을 수 없습니다: D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+        "step_id": 3
+      },
+      "4": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "visualization": {
+            "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+            "mesh_path": null
+          },
+          "message": "렌더링이 완료되었습니다."
+        },
+        "step_id": 4
+      }
+    },
+    "final_result": {
+      "status": "success",
+      "result": {
+        "status": "success",
+        "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+        "visualization": {
+          "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "mesh_path": null
+        },
+        "message": "렌더링이 완료되었습니다."
+      },
+      "step_id": 4
+    },
+    "all_results": {
+      "1": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "analysis": {
+            "garment_type": "상의",
+            "style": "캐주얼",
+            "color": "검정색",
+            "type": "hoodie"
+          },
+          "image_path": "D:\\AI\\ChatGarment\\uploads\\test_session_browser_001_TShirt.jpg",
+          "message": "이미지 분석이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 1
+      },
+      "2": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "pattern_path": "D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+          "pattern_info": {
+            "type": "hoodie",
+            "components": [
+              "front",
+              "back",
+              "sleeves",
+              "hood"
+            ]
+          },
+          "message": "패턴 생성이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 2
+      },
+      "3": {
+        "status": "error",
+        "error": "패턴 파일을 찾을 수 없습니다: D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+        "step_id": 3
+      },
+      "4": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "visualization": {
+            "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+            "mesh_path": null
+          },
+          "message": "렌더링이 완료되었습니다."
+        },
+        "step_id": 4
+      }
+    }
+  },
+  "visualization": {}
+}

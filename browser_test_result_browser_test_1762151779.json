@@ -1,0 +1,146 @@
+{
+  "status": "success",
+  "message": "작업이 성공적으로 완료되었습니다.",
+  "data": {
+    "status": "completed",
+    "plan_id": "plan_20251103153621663469",
+    "steps": {
+      "1": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "analysis": {
+            "garment_type": "상의",
+            "style": "캐주얼",
+            "color": "검정색",
+            "type": "hoodie"
+          },
+          "image_path": "D:\\AI\\ChatGarment\\uploads\\browser_test_1762151779_TShirt.jpg",
+          "message": "이미지 분석이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 1
+      },
+      "2": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "pattern_path": "D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+          "pattern_info": {
+            "type": "hoodie",
+            "components": [
+              "front",
+              "back",
+              "sleeves",
+              "hood"
+            ]
+          },
+          "message": "패턴 생성이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 2
+      },
+      "3": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "mesh_path": "D:\\AI\\ChatGarment\\outputs\\3d_models\\garment.obj",
+          "mesh_info": {
+            "vertices": 5000,
+            "faces": 10000,
+            "format": "obj"
+          },
+          "message": "3D 변환이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 3
+      },
+      "4": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "visualization": {
+            "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+            "mesh_path": "D:\\AI\\ChatGarment\\outputs\\3d_models\\garment.obj"
+          },
+          "message": "렌더링이 완료되었습니다."
+        },
+        "step_id": 4
+      }
+    },
+    "final_result": {
+      "status": "success",
+      "result": {
+        "status": "success",
+        "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+        "visualization": {
+          "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "mesh_path": "D:\\AI\\ChatGarment\\outputs\\3d_models\\garment.obj"
+        },
+        "message": "렌더링이 완료되었습니다."
+      },
+      "step_id": 4
+    },
+    "all_results": {
+      "1": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "analysis": {
+            "garment_type": "상의",
+            "style": "캐주얼",
+            "color": "검정색",
+            "type": "hoodie"
+          },
+          "image_path": "D:\\AI\\ChatGarment\\uploads\\browser_test_1762151779_TShirt.jpg",
+          "message": "이미지 분석이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 1
+      },
+      "2": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "pattern_path": "D:\\AI\\ChatGarment\\outputs\\patterns\\pattern.json",
+          "pattern_info": {
+            "type": "hoodie",
+            "components": [
+              "front",
+              "back",
+              "sleeves",
+              "hood"
+            ]
+          },
+          "message": "패턴 생성이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 2
+      },
+      "3": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "mesh_path": "D:\\AI\\ChatGarment\\outputs\\3d_models\\garment.obj",
+          "mesh_info": {
+            "vertices": 5000,
+            "faces": 10000,
+            "format": "obj"
+          },
+          "message": "3D 변환이 완료되었습니다. (Mock 모드)"
+        },
+        "step_id": 3
+      },
+      "4": {
+        "status": "success",
+        "result": {
+          "status": "success",
+          "render_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+          "visualization": {
+            "image_path": "D:\\AI\\ChatGarment\\outputs\\renders\\garment_render.png",
+            "mesh_path": "D:\\AI\\ChatGarment\\outputs\\3d_models\\garment.obj"
+          },
+          "message": "렌더링이 완료되었습니다."
+        },
+        "step_id": 4
+      }
+    }
+  },
+  "visualization": {}
+}
