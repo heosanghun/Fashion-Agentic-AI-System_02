@@ -108,10 +108,18 @@ class CustomUI:
         Returns:
             Dict: 사용자용 결과 데이터
         """
+        data = result.get("data", {})
         return {
             "status": result.get("status", "unknown"),
             "message": result.get("message", ""),
-            "data": result.get("data", {}),
-            "visualization": result.get("visualization", {})
+            "data": data,
+            "visualization": result.get("visualization", {}),
+            "thoughts": result.get("thoughts", {}),
+            "steps": data.get("steps", result.get("steps", {})),
+            "final_result": data.get("final_result", result.get("final_result", {})),
+            "plan_id": data.get("plan_id", result.get("plan_id")),
+            "chat_only": result.get("chat_only", False),
+            "openai_used": result.get("openai_used"),
+            "openai_error": result.get("openai_error"),
         }
 

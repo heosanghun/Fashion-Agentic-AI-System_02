@@ -1,7 +1,7 @@
 import React from 'react'
 import './ImageUpload.css'
 
-function ImageUpload({ onImageChange, disabled }) {
+function ImageUpload({ onImageChange, disabled, compact }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -33,7 +33,7 @@ function ImageUpload({ onImageChange, disabled }) {
   }
 
   return (
-    <div className="image-upload">
+    <div className={`image-upload ${compact ? 'compact' : ''}`}>
       <div
         className={`upload-area ${disabled ? 'disabled' : ''}`}
         onDrop={handleDrop}
@@ -41,14 +41,16 @@ function ImageUpload({ onImageChange, disabled }) {
         onClick={handleClick}
       >
         <div className="upload-icon">
-          ✨
+          {compact ? '📷' : '✨'}
         </div>
         <p>
-          이미지를 드래그하거나 클릭하여 업로드
+          {compact ? '이미지 추가' : '이미지를 드래그하거나 클릭하여 업로드'}
         </p>
-        <p className="upload-hint">
-          PNG, JPG, JPEG 지원
-        </p>
+        {!compact && (
+          <p className="upload-hint">
+            PNG, JPG, JPEG 지원
+          </p>
+        )}
       </div>
       <input
         id="image-input"

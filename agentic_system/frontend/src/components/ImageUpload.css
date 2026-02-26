@@ -1,111 +1,69 @@
+/* ============================================
+   ImageUpload — Premium dropzone
+   ============================================ */
+
 .image-upload {
   width: 100%;
-  position: relative;
-}
-
-.upload-label {
-  display: block;
-  cursor: pointer;
 }
 
 .upload-area {
-  border: 2px dashed rgba(167, 139, 250, 0.4);
-  border-radius: 1rem;
-  padding: 3rem 2rem;
+  border: 2px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: clamp(2rem, 4vw, 3rem) 1.5rem;
   text-align: center;
-  transition: all 0.3s ease;
-  background: rgba(10, 10, 10, 0.5);
-  backdrop-filter: blur(10px);
-  position: relative;
-  overflow: hidden;
-}
-
-.upload-area::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at center,
-    rgba(167, 139, 250, 0.1) 0%,
-    transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.upload-area:hover::before {
-  opacity: 1;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+  background: var(--bg-input);
+  cursor: pointer;
 }
 
 .upload-area:hover:not(.disabled) {
-  border-color: rgba(167, 139, 250, 0.7);
-  background: rgba(10, 10, 10, 0.7);
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.2),
-              inset 0 0 30px rgba(167, 139, 250, 0.05);
-  transform: translateY(-2px);
+  border-color: var(--accent-secondary);
+  background: rgba(196, 167, 125, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .upload-area.disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .upload-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.5));
-  position: relative;
-  z-index: 1;
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--accent-primary);
+  line-height: 1;
 }
 
 .upload-area p {
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0.5rem 0;
+  color: var(--text-primary);
   font-weight: 500;
-  position: relative;
-  z-index: 1;
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
 }
 
 .upload-hint {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.5);
-  position: relative;
-  z-index: 1;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
-.image-preview {
-  position: relative;
-  width: 100%;
-  border-radius: 1rem;
-  overflow: hidden;
-}
-
-.preview-image {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.remove-button {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
+/* Compact (프롬프트 인라인용) */
+.image-upload.compact .upload-area {
+  padding: 0.6rem 1rem;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  border-width: 1px;
+  border-style: solid;
 }
 
-.remove-button:hover {
-  background: white;
-  transform: scale(1.1);
+.image-upload.compact .upload-icon {
+  font-size: 1.2rem;
+  margin-bottom: 0;
 }
 
+.image-upload.compact .upload-area p {
+  margin: 0;
+  font-size: 0.85rem;
+}

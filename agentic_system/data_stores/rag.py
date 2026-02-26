@@ -1,12 +1,22 @@
 """
 RAG (Retrieval-Augmented Generation) Store
 
-PoC 단계에서는 Mock RAG 구현
-Pilot 단계에서 실제 Vector DB 기반 RAG로 확장 예정
+- 외부(인터넷): 웹 검색 RAG (ExternalRAG)
+- 내부(임시 로컬): 로컬 문서 디렉터리 기반 RAG (LocalRAG)
+- Mock: 규칙/키워드 기반 (MockRAG)
 """
 
 from typing import Dict, List, Optional, Any
 import json
+
+try:
+    from .rag_external import ExternalRAG
+except ImportError:
+    ExternalRAG = None
+try:
+    from .rag_local import LocalRAG
+except ImportError:
+    LocalRAG = None
 
 
 class MockRAG:
@@ -114,20 +124,73 @@ class MockRAG:
 
 class RAGStore:
     """
-    RAG Store (향후 확장용)
+    RAG Store — 외부(인터넷) + 내부(임시 로컬) 이중 RAG
     
-    Pilot 단계에서 Vector DB 기반 RAG로 확장
+    - external: 웹 검색 (DuckDuckGo 또는 Serper API)
+    - internal: 로컬 doc/ 및 data/local_rag_docs/ 문서 검색
+    - mock: 규칙 기반 패션 지식 (기존 MockRAG)
     """
     
-    def __init__(self, vector_db_type: str = "chroma"):
+    def __init__(self, vector_db_type: str = "chroma", use_external: bool = True, use_local: bool = True):
         self.vector_db_type = vector_db_type
-        self.rag = MockRAG()  # PoC 단계에서는 Mock 사용
+        self.mock_rag = MockRAG()
+        self.external_rag = ExternalRAG(max_results=5) if use_external and ExternalRAG else None
+        self.local_rag = LocalRAG() if use_local and LocalRAG else None
     
     def retrieve(self, query: str, top_k: int = 5) -> Dict[str, Any]:
-        """지식 검색"""
-        return self.rag.retrieve(query)
+        """지식 검색 (Mock 기준, 하위 호환)"""
+        return self.mock_rag.retrieve(query)
     
     def get_context(self, plan_type: str, user_input: str) -> Dict[str, Any]:
-        """RAG 컨텍스트 생성"""
-        return self.rag.get_rag_context(plan_type, user_input)
+        """
+        외부 + 내부 RAG를 모두 조회해 하나의 RAG 컨텍스트로 합침.
+        사용자 입력(user_input)으로 정보를 찾을 수 있도록 함.
+        """
+        if not user_input or not user_input.strip():
+            return self.mock_rag.get_rag_context(plan_type, user_input)
+        
+        query = user_input.strip()
+        all_suggestions: List[Any] = []
+        internal_suggestions: List[str] = []
+        external_suggestions: List[str] = []
+        
+        # 1) 내부(로컬) RAG
+        if self.local_rag:
+            try:
+                ctx = self.local_rag.get_context(query, top_k=5)
+                internal_suggestions = ctx.get("suggestions", [])
+                for s in internal_suggestions:
+                    all_suggestions.append({"source": "internal", "text": s[:500]})
+            except Exception as e:
+                print(f"[RAGStore] 내부 RAG 오류: {e}")
+        
+        # 2) 외부(인터넷) RAG
+        if self.external_rag:
+            try:
+                ctx = self.external_rag.get_context(query, max_results=5)
+                external_suggestions = ctx.get("suggestions", [])
+                for s in external_suggestions:
+                    all_suggestions.append({"source": "external", "text": s[:500]})
+            except Exception as e:
+                print(f"[RAGStore] 외부 RAG 오류: {e}")
+        
+        # 3) Mock RAG (패션 키워드 보강)
+        mock_ctx = self.mock_rag.get_rag_context(plan_type, user_input)
+        mock_suggestions = mock_ctx.get("rag_suggestions", [])
+        for s in mock_suggestions:
+            if isinstance(s, dict):
+                all_suggestions.append({"source": "mock", "text": str(s.get("value", s))[:300]})
+            else:
+                all_suggestions.append({"source": "mock", "text": str(s)[:300]})
+        
+        # F.LLM / Agent 2 에서 쓰는 형식 (문자열 목록)
+        mock_str = [str(s.get("value", s))[:300] if isinstance(s, dict) else str(s)[:300] for s in mock_suggestions]
+        rag_suggestions = internal_suggestions + external_suggestions + mock_str
+        return {
+            "rag_suggestions": rag_suggestions[:15],
+            "rag_internal": internal_suggestions[:5],
+            "rag_external": external_suggestions[:5],
+            "rag_mock": mock_ctx,
+            "confidence": mock_ctx.get("confidence", 0.0),
+        }
 

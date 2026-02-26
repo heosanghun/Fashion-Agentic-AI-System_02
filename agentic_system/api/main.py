@@ -18,44 +18,54 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "agentic_system"))
 
-# 환경 변수 로드 (Windows User 환경 변수에서 가져오기)
-if "CHATGARMENT_SERVICE_URL" not in os.environ:
+# .env 파일 로드 (프로젝트 루트, UTF-8 BOM 제거하여 키 이름 깨짐 방지)
+_env_path = project_root / ".env"
+try:
+    from dotenv import load_dotenv
+    if _env_path.exists():
+        try:
+            load_dotenv(_env_path, encoding="utf-8-sig")
+        except TypeError:
+            load_dotenv(_env_path)
+        print(f"[API] .env 로드됨: {_env_path}")
+except ImportError:
+    pass
+
+# 환경 변수: Gemini API (가상 피팅용)
+if "GEMINI_API_KEY" not in os.environ:
     try:
         result = subprocess.run(
-            ["powershell", "-Command", "[System.Environment]::GetEnvironmentVariable('CHATGARMENT_SERVICE_URL', 'User')"],
+            ["powershell", "-Command", "[System.Environment]::GetEnvironmentVariable('GEMINI_API_KEY', 'User')"],
             capture_output=True,
             text=True,
             timeout=2
         )
         if result.returncode == 0 and result.stdout.strip():
-            os.environ["CHATGARMENT_SERVICE_URL"] = result.stdout.strip()
-        else:
-            os.environ["CHATGARMENT_SERVICE_URL"] = "http://localhost:9000"
-    except:
-        os.environ["CHATGARMENT_SERVICE_URL"] = "http://localhost:9000"
+            os.environ["GEMINI_API_KEY"] = result.stdout.strip()
+    except Exception:
+        pass
+print(f"[API] GEMINI_API_KEY 설정 여부: {'예' if os.environ.get('GEMINI_API_KEY') else '아니오 (Mock 동작)'}")
 
-if "USE_CHATGARMENT_SERVICE" not in os.environ:
-    try:
-        result = subprocess.run(
-            ["powershell", "-Command", "[System.Environment]::GetEnvironmentVariable('USE_CHATGARMENT_SERVICE', 'User')"],
-            capture_output=True,
-            text=True,
-            timeout=2
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            os.environ["USE_CHATGARMENT_SERVICE"] = result.stdout.strip()
-        else:
-            os.environ["USE_CHATGARMENT_SERVICE"] = "true"
-    except:
-        os.environ["USE_CHATGARMENT_SERVICE"] = "true"
+# OpenAI API 키 (대화 의도 시 LLM 응답용) — 여러 이름·BOM 대비
+def _get_openai_key():
+    key = (os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "").strip()
+    if key:
+        return key
+    for k, v in os.environ.items():
+        if v and "openai" in k.lower() and "key" in k.lower():
+            return v.strip()
+    return ""
 
-print(f"[API] 환경 변수 설정:")
-print(f"  CHATGARMENT_SERVICE_URL={os.environ.get('CHATGARMENT_SERVICE_URL')}")
-print(f"  USE_CHATGARMENT_SERVICE={os.environ.get('USE_CHATGARMENT_SERVICE')}")
+_openai_key = _get_openai_key()
+if _openai_key:
+    os.environ["OPENAI_API_KEY"] = _openai_key  # AgentRuntime 에서 통일해서 읽도록
+    print(f"[API] OpenAI API 키 로드됨 (대화 LLM 사용 가능, 앞 8자: {_openai_key[:8]}...)")
+else:
+    print("[API] OpenAI API 키 없음 — 대화 시 고정 안내 문구만 사용됩니다. .env 에 OpenAI_API_Key= 또는 OPENAI_API_KEY= 설정 후 서버 재시작하세요.")
 
 from agentic_system.core import CustomUI, AgentRuntime, FLLM
 from agentic_system.core.memory import MemoryManager
-from agentic_system.tools.extensions import extensions_2d_to_3d_tool
+from agentic_system.tools.gemini_tryon import gemini_tryon_tool
 from agentic_system.tools.functions import product_search_function_tool
 from agentic_system.data_stores.rag import RAGStore
 
@@ -84,14 +94,14 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 agent2 = FLLM(
     model_name="internvl2-8b",
     model_path=None,  # 자동 경로 감지
-    rag_enabled=False,  # PoC에서는 RAG 비활성화
+    rag_enabled=True,  # 외부(웹) + 내부(로컬) RAG 사용
     use_llm=True,  # InternVL2 모델 사용
     device=device
 )
-agent_runtime = AgentRuntime(agent2=agent2, memory_manager=memory_manager)
+agent_runtime = AgentRuntime(agent2=agent2, memory_manager=memory_manager, rag_store=rag_store)
 
-# 도구 등록
-agent_runtime.register_tool("extensions_2d_to_3d", extensions_2d_to_3d_tool)
+# 도구 등록 (가상 피팅: Gemini Try-On, 상품 검색: Function)
+agent_runtime.register_tool("gemini_tryon", gemini_tryon_tool)
 agent_runtime.register_tool("function_product_search", product_search_function_tool)
 
 custom_ui = CustomUI()

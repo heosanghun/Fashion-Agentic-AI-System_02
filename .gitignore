@@ -30,6 +30,9 @@ model/InternVL2_8B/*.ckpt
 # 출력 및 업로드 파일
 outputs/
 uploads/
+
+# RAG 수집 대용량 데이터 (선택 업로드 제외)
+agentic_system/data/rag_fashion_1gb/
 ChatGarment/outputs/
 ChatGarment/uploads/
 ChatGarment/runs/

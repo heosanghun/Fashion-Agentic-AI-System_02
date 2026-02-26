@@ -302,8 +302,8 @@ JSON 형식으로 반환하거나, 자연어로 단계별 실행 계획을 설�
         [
             {
                 "step_id": 1,
-                "tool": "extensions_2d_to_3d",
-                "action": "convert_image_to_3d",
+                "tool": "gemini_tryon",
+                "action": "try_on",
                 "parameters": {...},
                 "dependencies": []
             },
@@ -329,7 +329,7 @@ JSON 형식으로 반환하거나, 자연어로 단계별 실행 계획을 설�
             steps = [
                 {
                     "step_id": 1,
-                    "tool": "extensions_2d_to_3d",
+                    "tool": "gemini_tryon",
                     "action": "process_request",
                     "parameters": plan.get("parameters", {}),
                     "dependencies": []
@@ -344,38 +344,18 @@ JSON 형식으로 반환하거나, 자연어로 단계별 실행 계획을 설�
         plan: Dict[str, Any], 
         context: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
-        """3D 생성 경로의 실행 단계 생성"""
+        """3D/가상 피팅 경로의 실행 단계 생성 (Gemini Try-On 단일 단계)"""
         steps = [
             {
                 "step_id": 1,
-                "tool": "extensions_2d_to_3d",
-                "action": "analyze_image",
+                "tool": "gemini_tryon",
+                "action": "try_on",
                 "parameters": {
                     "image_path": context.get("image_path") if context else None,
-                    "text_description": context.get("text") if context else None
+                    "text_description": context.get("text") if context else None,
+                    "person_image_path": context.get("person_image_path") if context else None,
                 },
                 "dependencies": []
-            },
-            {
-                "step_id": 2,
-                "tool": "extensions_2d_to_3d",
-                "action": "generate_pattern",
-                "parameters": {},
-                "dependencies": [1]
-            },
-            {
-                "step_id": 3,
-                "tool": "extensions_2d_to_3d",
-                "action": "convert_to_3d",
-                "parameters": {},
-                "dependencies": [2]
-            },
-            {
-                "step_id": 4,
-                "tool": "extensions_2d_to_3d",
-                "action": "render_result",
-                "parameters": {},
-                "dependencies": [3]
             }
         ]
         return steps

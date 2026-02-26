@@ -12,6 +12,7 @@ Agent Runtime Component - Agent 1
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 import json
+import os
 
 from .f_llm import FLLM, ExecutionPlan
 from .memory import MemoryManager, ShortTermMemory
@@ -38,10 +39,12 @@ class AgentRuntime:
         self,
         agent2: Optional[FLLM] = None,
         memory_manager: Optional[MemoryManager] = None,
+        rag_store: Optional[Any] = None,
         max_retries: int = 1
     ):
         self.agent2 = agent2 or FLLM()
         self.memory_manager = memory_manager or MemoryManager()
+        self.rag_store = rag_store
         self.max_retries = max_retries
         self.name = "Agent Runtime (Agent 1)"
         self.tools_registry: Dict[str, Callable] = {}
@@ -70,15 +73,42 @@ class AgentRuntime:
         # 1. 인식 (Perception): 요청 분석
         user_intent = self._analyze_user_intent(payload)
         
+        # 대화/일상 멘트는 도구 실행 없이 바로 응답 (가상 피팅 파이프라인 생략)
+        if user_intent.get("type") == "conversation":
+            out = self._respond_conversation(payload, user_intent, memory, session_id)
+            return {**out, "chat_only": True}
+        
+        # 정보성 질문(~란 뭐야?, 알려줘 등) → RAG 검색 결과로만 응답, Try-On 실행 안 함
+        if user_intent.get("type") == "information":
+            out = self._respond_with_rag(payload, memory, session_id)
+            return {**out, "chat_only": True}
+        
+        # 가상 피팅 의도지만 "Try-On 실행해줘" 등 실행 요청이 없고 이미지도 없으면 채팅만 (RAG 활용)
+        if user_intent.get("type") == "3d_generation" and not user_intent.get("run_try_on"):
+            out = self._respond_try_on_prompt(payload, memory, session_id)
+            return {**out, "chat_only": True}
+        
         # 2. 판단 (Judgment): 추상적 계획 수립 (Agent 1 역할)
         abstract_plan = self._create_abstract_plan(user_intent, payload, memory)
+        
+        # RAG: 외부(인터넷) + 내부(로컬) 로 사용자 입력 관련 정보 검색
+        user_text = (payload.get("input_data", {}) or {}).get("text", "")
+        rag_context = None
+        if self.rag_store and (user_text or abstract_plan.get("plan_type")):
+            try:
+                rag_context = self.rag_store.get_context(
+                    abstract_plan.plan_type,
+                    user_text or abstract_plan.get("parameters", {}).get("query", "")
+                )
+            except Exception as e:
+                print(f"[AgentRuntime] RAG get_context 오류: {e}")
         
         # Agent 2에게 전달하여 구체적 실행 계획 생성
         input_data = payload.get("input_data", {})
         execution_plan = self.agent2.generate_execution_plan(
             abstract_plan.dict(),
             context=input_data,
-            rag_context=None,  # PoC에서는 Mock RAG
+            rag_context=rag_context,
             user_text=input_data.get("text"),
             image_path=input_data.get("image_path")
         )
@@ -100,7 +130,9 @@ class AgentRuntime:
             metadata={"plan_id": execution_plan.plan_id}
         )
         
-        return final_result
+        # 2 판단 영역 표시용: 의도·추상계획·실행계획 요약 (Gemini Thoughts 스타일)
+        thoughts = self._build_thoughts(user_intent, abstract_plan, execution_plan)
+        return {**final_result, "thoughts": thoughts, "chat_only": False}
     
     def _analyze_user_intent(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -113,19 +145,254 @@ class AgentRuntime:
         text = input_data.get("text", "").lower()
         has_image = input_data.get("has_image", False)
         
-        # 의도 추론
-        if "입혀줘" in text or "가상 피팅" in text or has_image:
-            intent_type = "3d_generation"
+        # 의도 추론 (대화/일상 멘트 → 도구 실행 생략)
+        conversation_phrases = (
+            "대화", "잠깐", "이야기", "안녕", "뭐해", "뭐하네", "반가워",
+            "놀자", "잡담", "채팅", "말해", "들어줘", "대해봐", "이야기하자"
+        )
+        execute_phrases = (
+            "실행해줘", "실행 해줘", "진행해줘", "try-on", "try on",
+            "입혀줘", "가상 피팅 실행", "실행해 주세요", "진행해 주세요"
+        )
+        # 정보성 질문(패션/RAG 설명 요청) → 도구 실행 없이 RAG로만 응답
+        info_phrases = ("란 뭐야", "이 뭐야", "알려줘", "알려 주세요", "무엇", "어떤 내용", "뭐가 들어있", "설명해", "뭐예요", "무엇인가")
+        if not has_image and any(p in text for p in conversation_phrases):
+            intent_type = "conversation"
+            run_try_on = False
+        elif not has_image and any(p in text for p in info_phrases):
+            intent_type = "information"
+            run_try_on = False
         elif "추천" in text or "찾아줘" in text:
             intent_type = "garment_recommendation"
+            run_try_on = True
+        elif "입혀줘" in text or "가상 피팅" in text or has_image:
+            intent_type = "3d_generation"
+            run_try_on = has_image or any(p in text for p in execute_phrases)
         else:
-            intent_type = "3d_generation"  # 기본값
+            intent_type = "3d_generation"
+            run_try_on = has_image or any(p in text for p in execute_phrases)
         
         return {
             "type": intent_type,
             "confidence": 0.9,
             "text": text,
-            "has_image": has_image
+            "has_image": has_image,
+            "run_try_on": run_try_on,
+        }
+    
+    def _respond_conversation(
+        self,
+        payload: Dict[str, Any],
+        user_intent: Dict[str, Any],
+        memory: ShortTermMemory,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        대화/일상 멘트에 대한 응답 (도구 호출 없음).
+        OpenAI API가 동작하면 LLM 응답, 동작하지 않으면 기본 안내만 반환하며
+        openai_used / openai_error 로 상태를 명시해 희망고문하지 않음.
+        """
+        user_text = (payload.get("input_data") or {}).get("text", "")
+        api_key = (os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "").strip()
+        if not api_key:
+            for k, v in os.environ.items():
+                if v and "openai" in k.lower() and "key" in k.lower():
+                    api_key = v.strip()
+                    break
+        default_message = (
+            "안녕하세요. 가상 피팅 도우미예요. "
+            "옷 입혀달라거나 스타일 추천을 요청해 주시면 도와드릴게요."
+        )
+        message = default_message
+        openai_used = False
+        openai_error = None
+        if not api_key:
+            openai_error = "OpenAI API 키가 없습니다. .env 에 OpenAI_API_Key= 또는 OPENAI_API_KEY= 를 넣고 서버를 재시작해 주세요."
+            print(f"[AgentRuntime] 대화: {openai_error}")
+        elif not user_text:
+            openai_error = "입력 내용이 없습니다."
+        else:
+            try:
+                import requests
+                print(f"[AgentRuntime] 대화 OpenAI 호출 시도 (입력 길이: {len(user_text)})")
+                r = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "gpt-4o-mini",
+                        "messages": [
+                            {"role": "system", "content": "당신은 가상 피팅 서비스의 친절한 도우미입니다. 한두 문장으로 짧게 대답하세요."},
+                            {"role": "user", "content": user_text}
+                        ],
+                        "max_tokens": 150,
+                    },
+                    timeout=15,
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    choice = (data.get("choices") or [{}])[0]
+                    msg = (choice.get("message") or {}).get("content", "").strip()
+                    if msg:
+                        message = msg
+                        openai_used = True
+                        print(f"[AgentRuntime] 대화 OpenAI 응답 사용 (길이: {len(message)})")
+                    else:
+                        openai_error = "OpenAI 응답에 메시지가 없습니다."
+                else:
+                    try:
+                        err_json = r.json()
+                        err_msg = err_json.get("error", {}).get("message", r.text[:200])
+                    except Exception:
+                        err_msg = (r.text or "")[:200]
+                    openai_error = f"OpenAI API 오류 (HTTP {r.status_code}): {err_msg}"
+                    print(f"[AgentRuntime] 대화 OpenAI 호출 실패: {openai_error}")
+            except Exception as e:
+                openai_error = f"OpenAI 호출 실패: {e!s}"
+                import traceback
+                print(f"[AgentRuntime] 대화 OpenAI 예외: {e}")
+                traceback.print_exc()
+        memory.add_conversation(
+            user_input=user_text,
+            agent_response=message,
+            metadata={"intent": "conversation"}
+        )
+        thoughts = {
+            "intent": {"type": "conversation", "reason": "도구 실행 없이 응답합니다."},
+            "abstract_plan": None,
+            "execution_plan": None,
+        }
+        return {
+            "status": "completed",
+            "message": message,
+            "data": {},
+            "steps": {},
+            "final_result": {"status": "completed", "result": {"message": message}},
+            "plan_id": None,
+            "thoughts": thoughts,
+            "openai_used": openai_used,
+            "openai_error": openai_error,
+        }
+    
+    def _respond_with_rag(
+        self,
+        payload: Dict[str, Any],
+        memory: ShortTermMemory,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """정보성 질문: RAG 검색 결과로만 응답 (Try-On 실행 없음)."""
+        user_text = (payload.get("input_data") or {}).get("text", "").strip()
+        message = "검색된 참고 정보가 없습니다. 패션·의류·소재 관련 질문을 해 주세요."
+        if self.rag_store and user_text:
+            try:
+                ctx = self.rag_store.get_context("garment_recommendation", user_text)
+                suggestions = ctx.get("rag_suggestions") or []
+                if suggestions:
+                    parts = ["다음은 RAG에서 검색한 참고 정보입니다.\n"]
+                    for i, s in enumerate(suggestions[:5], 1):
+                        excerpt = (s[:400] + "…") if len(s) > 400 else s
+                        parts.append(f"{i}. {excerpt}")
+                    message = "\n\n".join(parts)
+            except Exception as e:
+                print(f"[AgentRuntime] RAG 응답 오류: {e}")
+                message = "참고 정보 검색 중 오류가 났습니다. 잠시 후 다시 시도해 주세요."
+        memory.add_conversation(user_input=user_text, agent_response=message, metadata={"intent": "information"})
+        return {
+            "status": "completed",
+            "message": message,
+            "data": {},
+            "steps": {},
+            "final_result": {"status": "completed", "result": {"message": message}},
+            "plan_id": None,
+            "thoughts": {
+                "intent": {"type": "information", "reason": "RAG 검색 결과로 응답."},
+                "abstract_plan": None,
+                "execution_plan": None,
+            },
+        }
+
+    def _respond_try_on_prompt(
+        self,
+        payload: Dict[str, Any],
+        memory: ShortTermMemory,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """가상 피팅 의도지만 실행 요청 없을 때: RAG 검색 결과가 있으면 그대로 응답, 없으면 안내 문구."""
+        user_text = (payload.get("input_data") or {}).get("text", "").strip()
+        message = (
+            "가상 피팅을 실행하려면 'Try-On 실행해줘' 또는 '입혀줘'라고 말씀해 주시거나, "
+            "의류 이미지를 올린 뒤 보내기 해 주세요. 그때 하단에 완료 → 결과가 진행됩니다."
+        )
+        if self.rag_store and user_text:
+            try:
+                ctx = self.rag_store.get_context("garment_recommendation", user_text)
+                suggestions = ctx.get("rag_suggestions") or []
+                if suggestions:
+                    parts = ["다음은 검색한 참고 정보입니다.\n"]
+                    for i, s in enumerate(suggestions[:5], 1):
+                        excerpt = (s[:400] + "…") if len(s) > 400 else s
+                        parts.append(f"{i}. {excerpt}")
+                    message = "\n\n".join(parts)
+            except Exception as e:
+                print(f"[AgentRuntime] RAG try_on_prompt 오류: {e}")
+        memory.add_conversation(
+            user_input=user_text,
+            agent_response=message,
+            metadata={"intent": "try_on_prompt"}
+        )
+        return {
+            "status": "completed",
+            "message": message,
+            "data": {},
+            "steps": {},
+            "final_result": {"status": "completed", "result": {"message": message}},
+            "plan_id": None,
+            "thoughts": {
+                "intent": {"type": "3d_generation", "reason": "실행 요청 없음 — 채팅만 응답."},
+                "abstract_plan": None,
+                "execution_plan": None,
+            },
+        }
+    
+    def _build_thoughts(
+        self,
+        user_intent: Dict[str, Any],
+        abstract_plan: AbstractPlan,
+        execution_plan: ExecutionPlan
+    ) -> Dict[str, Any]:
+        """판단 단계(2) 표시용: 의도·추상계획·실행계획 요약."""
+        intent_type = user_intent.get("type", "")
+        intent_labels = {
+            "3d_generation": "가상 피팅(3D 생성)",
+            "garment_recommendation": "의류 추천",
+            "conversation": "대화",
+            "information": "정보 검색(RAG)",
+        }
+        return {
+            "intent": {
+                "type": intent_type,
+                "label": intent_labels.get(intent_type, intent_type),
+                "has_image": user_intent.get("has_image", False),
+                "text_preview": (user_intent.get("text") or "")[:80],
+            },
+            "abstract_plan": {
+                "plan_type": abstract_plan.plan_type,
+                "goal": abstract_plan.goal,
+                "steps": abstract_plan.steps,
+                "parameters": {k: v for k, v in (abstract_plan.parameters or {}).items() if v is not None},
+            },
+            "execution_plan": {
+                "plan_id": execution_plan.plan_id,
+                "steps": [
+                    {
+                        "step_id": s.get("step_id"),
+                        "tool": s.get("tool"),
+                        "action": s.get("action"),
+                        "parameters": s.get("parameters"),
+                    }
+                    for s in execution_plan.steps
+                ],
+                "tools_required": execution_plan.tools_required,
+            },
         }
     
     def _create_abstract_plan(
@@ -276,6 +543,16 @@ class AgentRuntime:
                 "evaluation": evaluation
             }
         
+        # 의류 이미지 없음 등 재시도해도 바뀌지 않는 오류는 재시도하지 않고 바로 실패 메시지 반환
+        step_error = evaluation.get("step_error_message") or ""
+        if "의류 이미지" in step_error or "image_path" in step_error.lower():
+            return {
+                "status": "failed",
+                "message": "의류 이미지를 첨부한 뒤 '입혀줘' 또는 'Try-On 실행해줘'로 다시 시도해 주세요.",
+                "data": execution_result,
+                "evaluation": evaluation
+            }
+        
         # 실패 시 재시도
         if retry_count < self.max_retries:
             # 계획 수정 (간단한 재시도)
@@ -306,27 +583,32 @@ class AgentRuntime:
         # 실행 결과 자체의 상태 확인
         execution_status = execution_result.get("status", "unknown")
         
-        # 모든 단계가 성공했는지 확인
+        # 모든 단계가 성공했는지 확인 (단계 실행 성공 + result 내부 status가 error가 아님)
         failed_steps = []
+        step_error_message = None
         for step_id, result in all_steps.items():
             if isinstance(result, dict):
                 step_status = result.get("status", "unknown")
-                if step_status not in ["success", "completed"]:
+                inner = result.get("result") if isinstance(result.get("result"), dict) else {}
+                inner_status = inner.get("status", "")
+                if step_status not in ["success", "completed"] or inner_status == "error":
                     failed_steps.append(step_id)
+                    if inner.get("message") and not step_error_message:
+                        step_error_message = inner.get("message")
             else:
                 failed_steps.append(step_id)
         
         # 최종 결과도 확인
         if isinstance(final_result, dict):
+            final_inner = final_result.get("result") if isinstance(final_result.get("result"), dict) else {}
             final_status = final_result.get("status", "unknown")
-            if final_status not in ["success", "completed"]:
-                # 최종 결과가 실패면 전체 실패
+            if final_inner.get("status") == "error" and final_inner.get("message"):
+                step_error_message = step_error_message or final_inner.get("message")
+            if final_status not in ["success", "completed"] or final_inner.get("status") == "error":
                 success = False
             else:
-                # 모든 단계가 성공이고 실행 상태도 완료면 성공
                 success = len(failed_steps) == 0 and execution_status == "completed"
         else:
-            # 최종 결과가 없거나 딕셔너리가 아니면 실패
             success = len(failed_steps) == 0 and execution_status == "completed"
         
         return {
@@ -334,7 +616,8 @@ class AgentRuntime:
             "failed_steps": failed_steps,
             "total_steps": len(all_steps),
             "successful_steps": len(all_steps) - len(failed_steps),
-            "execution_status": execution_status
+            "execution_status": execution_status,
+            "step_error_message": step_error_message,
         }
 
 

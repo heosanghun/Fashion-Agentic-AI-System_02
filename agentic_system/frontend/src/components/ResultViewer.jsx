@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import './ResultViewer.css';
 import ModelViewer from './ModelViewer';
+import VoiceOutput from './VoiceOutput';
 
 function ResultViewer({ result, image }) {
+  const [thoughtsExpanded, setThoughtsExpanded] = useState(false);
   if (!result) {
     return (
       <div className="result-viewer">
         <div className="result-placeholder">
-          <p>결과가 여기에 표시됩니다.</p>
-          <p className="hint">이미지와 텍스트를 입력하고 "요청 전송" 버튼을 클릭하세요.</p>
+          <p>가상 피팅 결과가 여기에 나타납니다</p>
+          <p className="hint">의류 이미지를 올리거나 설명을 입력한 뒤 요청 전송을 눌러보세요.</p>
         </div>
       </div>
     );
@@ -19,6 +22,7 @@ function ResultViewer({ result, image }) {
   const steps = result.steps || {};
   const finalResult = result.final_result || {};
   const planId = result.plan_id || '';
+  const thoughts = result.thoughts || {};
 
   // 최종 결과에서 렌더링 이미지 경로 추출
   const renderImagePath = finalResult?.result?.visualization?.image_path || 
@@ -37,7 +41,7 @@ function ResultViewer({ result, image }) {
 
   return (
     <div className="result-viewer">
-      <h2>처리 결과</h2>
+      <h2>가상 피팅 결과</h2>
       
       <div className="result-status">
         <span className={`status-badge status-${status}`}>
@@ -46,9 +50,74 @@ function ResultViewer({ result, image }) {
         {planId && <span className="plan-id">Plan ID: {planId}</span>}
       </div>
 
+      {/* 2 판단 — 생각 및 판단 영역 (Gemini Thoughts 스타일) */}
+      {(thoughts.intent || thoughts.abstract_plan || thoughts.execution_plan) && (
+        <div className="thoughts-panel">
+          <div className="thoughts-header">
+            <span className="thoughts-icon" aria-hidden="true">◆</span>
+            <strong className="thoughts-title">생각 및 판단</strong>
+          </div>
+          <button
+            type="button"
+            className={`thoughts-toggle ${thoughtsExpanded ? 'is-expanded' : ''}`}
+            onClick={() => setThoughtsExpanded((e) => !e)}
+            aria-expanded={thoughtsExpanded}
+          >
+            <span>{thoughtsExpanded ? '접기' : '펼쳐서 모델의 생각·판단 과정 보기'}</span>
+            <span className="thoughts-chevron" aria-hidden="true">▼</span>
+          </button>
+          {thoughtsExpanded && (
+            <div className="thoughts-content">
+              {thoughts.intent && (
+                <section className="thoughts-block">
+                  <h4>① 의도 인식</h4>
+                  <p><strong>유형:</strong> {thoughts.intent.label || thoughts.intent.type}</p>
+                  {thoughts.intent.text_preview && <p><strong>입력 요약:</strong> {thoughts.intent.text_preview}</p>}
+                  {thoughts.intent.has_image && <p>이미지 포함</p>}
+                  {thoughts.intent.reason && <p className="thoughts-reason">{thoughts.intent.reason}</p>}
+                </section>
+              )}
+              {thoughts.abstract_plan && (
+                <section className="thoughts-block">
+                  <h4>② 추상 계획 (Agent 1)</h4>
+                  <p><strong>목표:</strong> {thoughts.abstract_plan.goal}</p>
+                  <p><strong>유형:</strong> {thoughts.abstract_plan.plan_type}</p>
+                  {thoughts.abstract_plan.steps?.length > 0 && (
+                    <ul>
+                      {thoughts.abstract_plan.steps.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )}
+              {thoughts.execution_plan && (
+                <section className="thoughts-block">
+                  <h4>③ 실행 계획 (Agent 2)</h4>
+                  {thoughts.execution_plan.plan_id && <p><strong>Plan ID:</strong> {thoughts.execution_plan.plan_id}</p>}
+                  {thoughts.execution_plan.steps?.length > 0 && (
+                    <ul className="thoughts-steps">
+                      {thoughts.execution_plan.steps.map((step, i) => (
+                        <li key={i}>
+                          <strong>{step.step_id}</strong> → {step.tool}.{step.action}
+                          {step.parameters && Object.keys(step.parameters).length > 0 && (
+                            <pre className="thoughts-params">{JSON.stringify(step.parameters, null, 2)}</pre>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {finalMessage && (
         <div className="result-message">
           <p>{finalMessage}</p>
+          <VoiceOutput text={finalMessage} />
         </div>
       )}
 
@@ -82,7 +151,7 @@ function ResultViewer({ result, image }) {
               const stepMessage = stepResult.message || '';
 
               let stepDescription = '';
-              if (stepId === '1') stepDescription = '1단계: 이미지 분석';
+              if (stepId === '1') stepDescription = '1단계: 가상 피팅';
               else if (stepId === '2') stepDescription = '2단계: 패턴 생성';
               else if (stepId === '3') stepDescription = '3단계: 3D 변환';
               else if (stepId === '4') stepDescription = '4단계: 렌더링';

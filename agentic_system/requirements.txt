@@ -21,6 +21,16 @@ chromadb>=0.4.0
 faiss-cpu>=1.7.4
 sentence-transformers>=2.2.0
 
+# 외부 RAG (웹 검색, API 키 불필요)
+duckduckgo-search>=6.0.0
+
+# Gemini API (가상 피팅 Try-On)
+google-genai>=1.0.0
+# 또는 레거시: google-generativeai>=0.8.0
+
+# 환경 변수 (.env 로드)
+python-dotenv>=1.0.0
+
 # 기타 유틸리티
 python-dateutil>=2.8.2
 numpy>=1.24.0

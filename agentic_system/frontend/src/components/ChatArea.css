@@ -1,0 +1,109 @@
+/* 채팅 영역 — 질문 바로 아래 답변 (ChatGPT 스타일) */
+.chat-area {
+  width: 100%;
+  min-height: 120px;
+  margin-bottom: 1rem;
+}
+
+.chat-placeholder {
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-light);
+}
+
+.chat-placeholder p {
+  margin: 0 0 0.35rem;
+}
+
+.chat-placeholder-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-bubble {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.chat-bubble.chat-bubble-user {
+  justify-content: flex-end;
+}
+
+.chat-bubble-inner {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chat-bubble-user .chat-bubble-inner {
+  align-items: flex-end;
+}
+
+.chat-role-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.chat-bubble-content {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-bubble-user .chat-bubble-content {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-assistant .chat-bubble-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-attach-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+/* OpenAI 미동작 시 안내 — 희망고문 방지 */
+.chat-openai-notice {
+  font-size: 0.8rem;
+  color: var(--error-text);
+  background: var(--error-bg);
+  border: 1px solid rgba(180, 50, 50, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.chat-openai-detail {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

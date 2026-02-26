@@ -1,3 +1,92 @@
+/* ============================================
+   Fashion Agentic AI — Premium Light Theme
+   디자인 시스템: 밝고 매력적인 프리미엄 톤
+   ============================================ */
+
+:root {
+  /* 배경 — 따뜻한 오프화이트·크림 */
+  --bg-page: #FAF9F7;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-input: #F5F3F0;
+
+  /* 텍스트 */
+  --text-primary: #1A1A1A;
+  --text-secondary: #5C5C5C;
+  --text-muted: #8A8A8A;
+  --text-inverse: #FFFFFF;
+
+  /* 액센트 — 웜 골드·로즈 (패션·프리미엄) */
+  --accent-primary: #B8860B;
+  --accent-primary-hover: #9A7209;
+  --accent-secondary: #C4A77D;
+  --accent-rose: #B76E79;
+  --accent-rose-soft: rgba(183, 110, 121, 0.12);
+
+  /* 상태 */
+  --success-bg: rgba(34, 139, 34, 0.08);
+  --success-text: #228B22;
+  --error-bg: rgba(180, 50, 50, 0.08);
+  --error-text: #B43232;
+  --warning-bg: rgba(218, 165, 32, 0.1);
+  --warning-text: #B8860B;
+
+  /* 그림자·테두리 */
+  --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.06);
+  --shadow-md: 0 4px 12px rgba(26, 26, 26, 0.08);
+  --shadow-lg: 0 12px 40px rgba(26, 26, 26, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(184, 134, 11, 0.25);
+  --border-light: rgba(26, 26, 26, 0.08);
+  --border-medium: rgba(26, 26, 26, 0.12);
+
+  /* 간격·타이포 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ========== 다크 테마 ========== */
+[data-theme="dark"] {
+  --bg-page: #1a1a1c;
+  --bg-card: #252528;
+  --bg-elevated: #2c2c30;
+  --bg-input: #2c2c30;
+
+  --text-primary: #f0f0f2;
+  --text-secondary: #b0b0b5;
+  --text-muted: #78787e;
+  --text-inverse: #1a1a1c;
+
+  --accent-primary: #d4a574;
+  --accent-primary-hover: #e0b888;
+  --accent-secondary: #c4a77d;
+  --accent-rose: #d49898;
+  --accent-rose-soft: rgba(183, 110, 121, 0.2);
+
+  --success-bg: rgba(76, 175, 80, 0.15);
+  --success-text: #81c784;
+  --error-bg: rgba(244, 67, 54, 0.15);
+  --error-text: #e57373;
+  --warning-bg: rgba(255, 193, 7, 0.12);
+  --warning-text: #ffca28;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-focus: 0 0 0 3px rgba(212, 165, 116, 0.35);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(196, 167, 125, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 80% 100%, rgba(183, 110, 121, 0.08) 0%, transparent 45%);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,60 +94,25 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #000000;
+  background: var(--bg-page);
+  color: var(--text-primary);
   min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
+  line-height: 1.6;
 }
 
+/* 미묘한 그라데이션 배경 — 밝고 고급스러움 */
 body::before {
   content: '';
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse at center bottom, 
-    rgba(139, 92, 246, 0.3) 0%, 
-    rgba(124, 58, 237, 0.2) 30%,
-    rgba(79, 70, 229, 0.1) 60%,
-    transparent 100%);
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(196, 167, 125, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 80% 100%, rgba(183, 110, 121, 0.08) 0%, transparent 45%);
   pointer-events: none;
   z-index: 0;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse 100% 60% at center bottom,
-    rgba(167, 139, 250, 0.4) 0%,
-    rgba(139, 92, 246, 0.25) 25%,
-    rgba(124, 58, 237, 0.15) 50%,
-    transparent 75%);
-  pointer-events: none;
-  z-index: 0;
-  animation: pulse 8s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.6;
-    transform: translateX(-50%) scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: translateX(-50%) scale(1.05);
-  }
 }
 
 #root {
@@ -66,4 +120,3 @@ body::after {
   position: relative;
   z-index: 1;
 }
-

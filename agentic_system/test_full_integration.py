@@ -107,17 +107,17 @@ def test_image_request():
     print("4. 이미지 요청 처리 테스트")
     print("=" * 60)
     
-    # 테스트 이미지 찾기
-    test_image_paths = [
-        project_root / "ChatGarment" / "example_data" / "example_imgs" / "1aee14a8c7b4d56b4e8b6ddd575d1f561a72fdc75c43a4b6926f1655152193c6.png",
-        project_root / "ChatGarment" / "example_data" / "example_imgs" / "72b086429d2df2a8de6f4403a024b2bb17446021c9e8f9acfc7a990ac8434.png",
-    ]
-    
+    # 테스트 이미지 찾기 (uploads 또는 image 폴더)
+    test_image_dirs = [project_root / "uploads", project_root / "image"]
     test_image = None
-    for path in test_image_paths:
-        if path.exists():
-            test_image = path
-            break
+    for dir_path in test_image_dirs:
+        if dir_path.is_dir():
+            for ext in ("*.png", "*.jpg", "*.jpeg"):
+                for path in dir_path.glob(ext):
+                    test_image = path
+                    break
+            if test_image:
+                break
     
     if not test_image:
         print("⚠️  테스트 이미지를 찾을 수 없습니다.")

@@ -1,0 +1,536 @@
+/* POC 안내 — 계획서 뼈대, 종합 구성도, 21가지 패턴 요약 */
+.poc-pillar {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  box-shadow: var(--shadow-md);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-left: none;
+  background: var(--bg-card);
+}
+
+.poc-pillar.is-open {
+  width: clamp(240px, 28vw, 320px);
+}
+
+.poc-pillar:not(.is-open) {
+  width: auto;
+}
+
+.poc-pillar-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.5rem;
+  min-width: 44px;
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.poc-pillar-toggle:hover {
+  background: var(--accent-rose-soft, rgba(183, 110, 121, 0.12));
+  color: var(--accent-primary);
+}
+
+.poc-pillar-toggle-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.poc-pillar-content {
+  flex: 1;
+  padding: 1rem 1rem 1.25rem;
+  overflow-y: auto;
+  max-height: 85vh;
+}
+
+.poc-pillar:not(.is-open) .poc-pillar-content {
+  display: none;
+}
+
+.poc-pillar-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.poc-pillar-doc {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+}
+
+.poc-pillar-flow {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.poc-pillar-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.poc-pillar-step {
+  position: relative;
+  padding: 0.6rem 0 0.6rem 1.5rem;
+  border-left: 3px solid var(--border-light);
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: border-color 0.25s;
+}
+
+.poc-pillar-step.is-active {
+  border-left-color: var(--accent-secondary);
+}
+
+.poc-pillar-step-num {
+  position: absolute;
+  left: -0.6rem;
+  top: 0.5rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--border-medium);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+}
+
+/* 활성 단계: 불 들어온 상태 */
+.poc-pillar-step.is-active .poc-pillar-step-num {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  box-shadow: 0 0 0 2px rgba(196, 167, 125, 0.35);
+}
+
+.poc-pillar-step:not(.is-active) strong {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.poc-pillar-step:not(.is-active) p {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.poc-pillar-step strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.poc-pillar-step p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.poc-pillar-step em {
+  color: var(--accent-primary);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.poc-pillar-core {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.poc-pillar-core-item {
+  padding: 0.5rem 0.65rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.poc-pillar-core-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.poc-pillar-core-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.poc-pillar-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.poc-pillar-diagram-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.poc-pillar-diagram-btn:hover {
+  background: var(--accent-rose-soft, rgba(183, 110, 121, 0.12));
+  border-color: var(--accent-primary);
+}
+
+.poc-pillar-guide-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.poc-pillar-guide-btn:hover {
+  background: var(--accent-rose-soft, rgba(183, 110, 121, 0.12));
+  border-color: var(--accent-primary);
+}
+
+/* 21가지 패턴 & POC 요약 안내창 — PC 화면 꽉 차게, 글씨 크게 */
+.poc-pillar-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  animation: poc-pillar-fadeIn 0.2s ease-out;
+}
+
+.poc-pillar-guide-panel {
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  max-height: 100vh;
+  background: #fff;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.poc-pillar-guide-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  border-bottom: 2px solid var(--border-light);
+  background: var(--bg-input);
+}
+
+.poc-pillar-guide-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.poc-pillar-guide-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #333;
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.poc-pillar-guide-close:hover {
+  background: var(--bg-input);
+}
+
+.poc-pillar-guide-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 2.5rem;
+}
+
+.poc-guide-section {
+  margin-bottom: 2rem;
+}
+
+.poc-guide-section:last-child {
+  margin-bottom: 0;
+}
+
+.poc-guide-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+.poc-guide-lead {
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.poc-guide-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 0.5rem;
+}
+
+.poc-guide-table-wrap .poc-guide-table {
+  min-width: 640px;
+}
+
+.poc-guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.poc-guide-table th,
+.poc-guide-table td {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-light);
+  text-align: left;
+  vertical-align: top;
+}
+
+.poc-guide-table th {
+  background: var(--bg-input);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.poc-guide-table td {
+  color: var(--text-secondary);
+}
+
+.poc-guide-table-compact th:nth-child(1),
+.poc-guide-table-compact td:nth-child(1) {
+  width: 28%;
+}
+
+.poc-guide-table-compact th:nth-child(2),
+.poc-guide-table-compact td:nth-child(2) {
+  width: 14%;
+}
+
+.poc-guide-list {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.5rem;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.poc-guide-list li {
+  margin-bottom: 0.4rem;
+}
+
+/* 모달: 종합 시스템 구성도 — PC 화면에 가득 차게 표시 */
+.poc-pillar-diagram-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  animation: poc-pillar-fadeIn 0.2s ease-out;
+}
+
+@keyframes poc-pillar-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.poc-pillar-diagram-wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.poc-pillar-diagram-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #333;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.poc-pillar-diagram-close:hover {
+  background: #fff;
+}
+
+.poc-pillar-diagram-zoom-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.poc-pillar-diagram-zoom-bar button {
+  min-width: 2.25rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: #fff;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.poc-pillar-diagram-zoom-bar button:hover {
+  background: var(--accent-rose-soft, rgba(183, 110, 121, 0.1));
+  border-color: var(--accent-primary);
+}
+
+.poc-pillar-diagram-zoom-value {
+  min-width: 3.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.poc-pillar-diagram-viewport {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+}
+
+.poc-pillar-diagram-viewport:active {
+  cursor: grabbing;
+}
+
+.poc-pillar-diagram-transform {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 0.05s ease-out;
+}
+
+/* 줌/패닝 시 transform으로 제어, 기본은 화면에 맞춤 */
+.poc-pillar-diagram-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  vertical-align: top;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .poc-pillar {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border: 1px solid var(--border-light);
+    border-bottom: none;
+    max-height: 45vh;
+  }
+
+  .poc-pillar.is-open {
+    width: 100%;
+  }
+
+  .poc-pillar-toggle {
+    flex-direction: row;
+    min-width: auto;
+    width: 100%;
+    padding: 0.5rem 1rem;
+  }
+}

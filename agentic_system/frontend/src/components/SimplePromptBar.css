@@ -1,0 +1,265 @@
+/* ========== 심플 프롬프트 바 (참고 이미지 스타일) ========== */
+.simple-prompt {
+  width: 100%;
+}
+
+.simple-prompt-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 1rem;
+  font-family: var(--font-body);
+}
+
+.simple-prompt-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 52px;
+  padding: 0 0.5rem 0 0.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.simple-prompt-bar:focus-within {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 1px rgba(196, 167, 125, 0.2);
+}
+
+.simple-prompt-bar-left {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.simple-prompt-plus {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.simple-prompt-plus:hover:not(:disabled) {
+  background: var(--border-medium);
+}
+
+.simple-prompt-plus:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.simple-prompt-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  padding: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.simple-prompt-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.simple-prompt-dropdown-item:hover:not(.disabled) {
+  background: var(--bg-input);
+}
+
+.simple-prompt-dropdown-item.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.simple-prompt-dropdown-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.simple-prompt-dropdown-more {
+  color: var(--text-muted);
+}
+
+.simple-prompt-dropdown-arrow {
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.simple-prompt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+
+.simple-prompt-input::placeholder {
+  color: var(--text-muted);
+}
+
+.simple-prompt-input:focus {
+  outline: none;
+}
+
+.simple-prompt-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* 마이크 아이콘만 (compact) */
+.simple-prompt-bar-right .voice-input-wrap .voice-label {
+  display: none;
+}
+
+.simple-prompt-bar-right .voice-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.simple-prompt-bar-right .voice-btn .voice-icon {
+  margin: 0;
+}
+
+.simple-prompt-bar-right .voice-error {
+  display: none;
+}
+
+/* 노란 보내기 버튼 (pill) */
+.simple-prompt-send {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: #f5c542;
+  color: #1a1a1a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.simple-prompt-send:hover:not(:disabled) {
+  background: #f0b820;
+  transform: scale(1.05);
+}
+
+.simple-prompt-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.simple-prompt-send-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.simple-prompt-send-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.simple-prompt-send-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: simplePromptDot 0.5s ease-in-out infinite both;
+}
+
+.simple-prompt-send-dots span:nth-child(2) { animation-delay: 0.1s; }
+.simple-prompt-send-dots span:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes simplePromptDot {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.simple-prompt-attach-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-input);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 100%;
+}
+
+.simple-prompt-attach-preview img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.simple-prompt-attach-preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.simple-prompt-attach-remove {
+  margin-left: 0.25rem;
+  padding: 0 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.simple-prompt-attach-remove:hover {
+  color: var(--text-primary);
+  background: rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .simple-prompt-attach-remove:hover {
+  background: rgba(255,255,255,0.08);
+}
