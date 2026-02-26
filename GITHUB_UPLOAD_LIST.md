@@ -67,8 +67,6 @@
 
 #### 1.5 루트 레벨 스크립트
 - `llava_infer.py`
-- `parse_pdf.py`
-- `test_*.py` (테스트 파일들)
 - `restart_api_clean.ps1`
 - `scripts/evaluate_garment_v2_imggen_1float.py`
 
