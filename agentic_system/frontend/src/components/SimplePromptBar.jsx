@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import VoiceInput from './VoiceInput';
 import './SimplePromptBar.css';
 
 function SimplePromptBar({
   text,
   setText,
   image,
+  personImage,
   onImageChange,
+  onPersonImageChange,
   onSubmit,
   loading,
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const fileInputRef = useRef(null);
+  const garmentInputRef = useRef(null);
+  const personInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -26,18 +28,27 @@ function SimplePromptBar({
     }
   }, [dropdownOpen]);
 
-  const handleAddPhoto = () => {
-    fileInputRef.current?.click();
+  const handleAddGarment = () => {
+    garmentInputRef.current?.click();
+    setDropdownOpen(false);
+  };
+  const handleAddPerson = () => {
+    personInputRef.current?.click();
     setDropdownOpen(false);
   };
 
-  const handleFileChange = (e) => {
+  const handleGarmentChange = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       onImageChange(file);
-    } else if (file) {
-      alert('이미지 파일만 업로드 가능합니다.');
-    }
+    } else if (file) alert('이미지 파일만 업로드 가능합니다.');
+    e.target.value = '';
+  };
+  const handlePersonChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onPersonImageChange(file);
+    } else if (file) alert('이미지 파일만 업로드 가능합니다.');
     e.target.value = '';
   };
 
@@ -69,11 +80,20 @@ function SimplePromptBar({
               <button
                 type="button"
                 className="simple-prompt-dropdown-item"
-                onClick={handleAddPhoto}
+                onClick={handleAddGarment}
                 role="menuitem"
               >
-                <span className="simple-prompt-dropdown-icon">📎</span>
-                사진 및 파일 추가
+                <span className="simple-prompt-dropdown-icon">👕</span>
+                입을 옷 사진 (의류)
+              </button>
+              <button
+                type="button"
+                className="simple-prompt-dropdown-item"
+                onClick={handleAddPerson}
+                role="menuitem"
+              >
+                <span className="simple-prompt-dropdown-icon">👤</span>
+                내 사진 (인물)
               </button>
               <button type="button" className="simple-prompt-dropdown-item disabled" disabled role="menuitem">
                 <span className="simple-prompt-dropdown-icon">🖼️</span>
@@ -98,14 +118,8 @@ function SimplePromptBar({
               </button>
             </div>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-            aria-hidden="true"
-          />
+          <input ref={garmentInputRef} type="file" accept="image/*" onChange={handleGarmentChange} style={{ display: 'none' }} aria-hidden="true" />
+          <input ref={personInputRef} type="file" accept="image/*" onChange={handlePersonChange} style={{ display: 'none' }} aria-hidden="true" />
         </div>
         <input
           type="text"
@@ -118,12 +132,11 @@ function SimplePromptBar({
           aria-label="메시지 입력"
         />
         <div className="simple-prompt-bar-right">
-          <VoiceInput onTranscript={setText} disabled={loading} compact />
           <button
             type="button"
             className="simple-prompt-send"
             onClick={onSubmit}
-            disabled={loading || (!text && !image)}
+            disabled={loading || (!text && !image && !personImage)}
             aria-label="보내기"
             title="보내기"
           >
@@ -137,18 +150,23 @@ function SimplePromptBar({
           </button>
         </div>
       </div>
-      {image && (
+      {(image || personImage) && (
         <div className="simple-prompt-attach-preview">
-          <img src={URL.createObjectURL(image)} alt="첨부" />
-          <span>{image.name}</span>
-          <button
-            type="button"
-            className="simple-prompt-attach-remove"
-            onClick={() => onImageChange(null)}
-            aria-label="첨부 제거"
-          >
-            ×
-          </button>
+          {image && (
+            <span className="simple-prompt-attach-preview-item">
+              <img src={URL.createObjectURL(image)} alt="의류" />
+              <span>👕 {image.name}</span>
+              <button type="button" className="simple-prompt-attach-remove" onClick={() => onImageChange(null)} aria-label="의류 제거">×</button>
+            </span>
+          )}
+          {personImage && (
+            <span className="simple-prompt-attach-preview-item">
+              <img src={URL.createObjectURL(personImage)} alt="인물" />
+              <span>👤 {personImage.name}</span>
+              <button type="button" className="simple-prompt-attach-remove" onClick={() => onPersonImageChange(null)} aria-label="인물 제거">×</button>
+            </span>
+          )}
+          <p className="simple-prompt-attach-hint">가상 피팅: 의류 + 인물 두 장을 올리면 더 정확합니다.</p>
         </div>
       )}
     </section>

@@ -9,7 +9,8 @@ import SimplePromptBar from './components/SimplePromptBar';
 import ChatArea from './components/ChatArea';
 
 function App() {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null);           // 입을 옷 사진 (의류)
+  const [personImage, setPersonImage] = useState(null); // 내 사진 (인물)
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -21,43 +22,65 @@ function App() {
     setImage(file ?? null);
     setError(null);
   };
+  const handlePersonImageChange = (file) => {
+    setPersonImage(file ?? null);
+    setError(null);
+  };
 
   const handleSubmit = async () => {
-    if (!text && !image) {
-      setError('이미지 또는 텍스트 입력이 필요합니다.');
+    if (!text && !image && !personImage) {
+      setError('텍스트 또는 이미지(의류/인물) 중 하나는 필요합니다.');
       return;
     }
 
-    const userContent = text || '(이미지만 첨부)';
-    const imageName = image ? image.name : null;
-    setMessages((prev) => [...prev, { role: 'user', content: userContent, imageName }]);
+    const userContent = text || (image || personImage ? '(이미지 첨부)' : '');
+    const imageName = image ? `옷: ${image.name}` : null;
+    const personName = personImage ? `인물: ${personImage.name}` : null;
+    setMessages((prev) => [...prev, { role: 'user', content: userContent, imageName: imageName || personName }]);
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
       const formData = new FormData();
-      if (text) {
-        formData.append('text', text);
-      }
-      if (image) {
-        formData.append('image', image);
-      }
+      if (text) formData.append('text', text);
+      if (image) formData.append('image', image);           // 의류
+      if (personImage) formData.append('person_image', personImage); // 인물
       formData.append('session_id', sessionId);
 
-      const response = await axios.post('http://localhost:8000/api/v1/request', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 30000,
-      });
+      // 의류+인물 둘 다 있으면 직통 Try-On API 사용 (POC 뼈대 경유 없음). 404면 기존 API로 재시도
+      const useDirectTryon = image && personImage;
+      const tryonPayload = useDirectTryon
+        ? (() => { const fd = new FormData(); fd.append('image', image); fd.append('person_image', personImage); fd.append('session_id', sessionId); return fd; })()
+        : null;
+      const apiOpts = {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000,
+      };
+
+      let response;
+      if (useDirectTryon && tryonPayload) {
+        try {
+          response = await axios.post('http://localhost:8000/api/v1/tryon', tryonPayload, apiOpts);
+        } catch (directErr) {
+          if (directErr.response?.status === 404) {
+            response = await axios.post('http://localhost:8000/api/v1/request', formData, apiOpts);
+          } else {
+            throw directErr;
+          }
+        }
+      } else {
+        response = await axios.post('http://localhost:8000/api/v1/request', formData, apiOpts);
+      }
 
       const data = response.data;
       const assistantMessage = data.message || '응답이 없습니다.';
+      // Try-On 결과가 있으면 대화(OpenAI) 오류는 표시하지 않음
+      const showOpenAIError = data.chat_only && (data.openai_error || null);
       setMessages((prev) => [...prev, {
         role: 'assistant',
         content: assistantMessage,
-        openaiError: data.openai_error || null,
+        openaiError: showOpenAIError || null,
       }]);
 
       if (!data.chat_only) {
@@ -79,6 +102,7 @@ function App() {
 
   const handleClear = () => {
     setImage(null);
+    setPersonImage(null);
     setText('');
     setResult(null);
     setError(null);
@@ -107,7 +131,9 @@ function App() {
           text={text}
           setText={setText}
           image={image}
+          personImage={personImage}
           onImageChange={handleImageChange}
+          onPersonImageChange={handlePersonImageChange}
           onSubmit={handleSubmit}
           loading={loading}
         />
@@ -118,7 +144,7 @@ function App() {
               <StatusBar loading={loading} progress={result.status === 'success' || result.status === 'completed' ? '완료' : result.status === 'failed' ? '실패' : undefined} status={result.status} />
             </div>
             <div className={`result-section result-reveal`}>
-              <ResultViewer result={result} image={image} />
+              <ResultViewer result={result} image={image} personImage={personImage} />
             </div>
           </>
         )}

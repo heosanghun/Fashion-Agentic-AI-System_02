@@ -345,6 +345,9 @@ JSON 형식으로 반환하거나, 자연어로 단계별 실행 계획을 설�
         context: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """3D/가상 피팅 경로의 실행 단계 생성 (Gemini Try-On 단일 단계)"""
+        person_path = context.get("person_image_path") if context else None
+        if not person_path and context:
+            print("[F.LLM] 경고: person_image_path가 없습니다. 인물 사진을 함께 올리면 Gemini Try-On 합성이 가능합니다.")
         steps = [
             {
                 "step_id": 1,
@@ -353,7 +356,7 @@ JSON 형식으로 반환하거나, 자연어로 단계별 실행 계획을 설�
                 "parameters": {
                     "image_path": context.get("image_path") if context else None,
                     "text_description": context.get("text") if context else None,
-                    "person_image_path": context.get("person_image_path") if context else None,
+                    "person_image_path": person_path,
                 },
                 "dependencies": []
             }

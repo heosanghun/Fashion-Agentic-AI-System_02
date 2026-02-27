@@ -73,20 +73,43 @@ class AgentRuntime:
         # 1. 인식 (Perception): 요청 분석
         user_intent = self._analyze_user_intent(payload)
         
-        # 대화/일상 멘트는 도구 실행 없이 바로 응답 (가상 피팅 파이프라인 생략)
-        if user_intent.get("type") == "conversation":
+        # 로컬 Try-On 전용 모드: 대화/RAG/추천 분기 없이 항상 가상 피팅만 실행
+        try_on_only = os.environ.get("TRY_ON_ONLY", "").strip().lower() in ("1", "true", "yes")
+        if try_on_only:
+            input_data = payload.get("input_data", {}) or {}
+            has_any = bool(input_data.get("text") or input_data.get("image_path") or input_data.get("person_image_path") or input_data.get("has_image"))
+            user_intent = {
+                "type": "3d_generation",
+                "run_try_on": has_any,
+                "confidence": 0.9,
+                "text": (input_data.get("text") or "").lower(),
+                "has_image": input_data.get("has_image", False),
+            }
+        
+        # 대화/일상 멘트는 도구 실행 없이 바로 응답 (Try-On 전용 모드가 아닐 때만)
+        if not try_on_only and user_intent.get("type") == "conversation":
             out = self._respond_conversation(payload, user_intent, memory, session_id)
             return {**out, "chat_only": True}
         
-        # 정보성 질문(~란 뭐야?, 알려줘 등) → RAG 검색 결과로만 응답, Try-On 실행 안 함
-        if user_intent.get("type") == "information":
+        # 정보성 질문 → RAG 검색 결과로만 응답 (Try-On 전용 모드가 아닐 때만)
+        if not try_on_only and user_intent.get("type") == "information":
             out = self._respond_with_rag(payload, memory, session_id)
             return {**out, "chat_only": True}
         
-        # 가상 피팅 의도지만 "Try-On 실행해줘" 등 실행 요청이 없고 이미지도 없으면 채팅만 (RAG 활용)
-        if user_intent.get("type") == "3d_generation" and not user_intent.get("run_try_on"):
+        # 가상 피팅 의도지만 실행 요청 없고 이미지도 없으면 채팅만 (Try-On 전용 모드가 아닐 때만)
+        if not try_on_only and user_intent.get("type") == "3d_generation" and not user_intent.get("run_try_on"):
             out = self._respond_try_on_prompt(payload, memory, session_id)
             return {**out, "chat_only": True}
+        
+        # Try-On 전용 모드에서 입력이 전혀 없으면 안내만 반환
+        _input = payload.get("input_data") or {}
+        if try_on_only and not _input.get("has_image") and not _input.get("text"):
+            return {
+                "status": "success",
+                "message": "의류 사진과 내 사진(인물)을 올린 뒤 '입혀줘'를 보내주세요.",
+                "data": {},
+                "chat_only": True,
+            }
         
         # 2. 판단 (Judgment): 추상적 계획 수립 (Agent 1 역할)
         abstract_plan = self._create_abstract_plan(user_intent, payload, memory)
@@ -193,11 +216,13 @@ class AgentRuntime:
         openai_used / openai_error 로 상태를 명시해 희망고문하지 않음.
         """
         user_text = (payload.get("input_data") or {}).get("text", "")
-        api_key = (os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "").strip()
+        def _norm_key(s):
+            return (s or "").replace("\r", "").replace("\n", "").strip()
+        api_key = _norm_key(os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "")
         if not api_key:
             for k, v in os.environ.items():
                 if v and "openai" in k.lower() and "key" in k.lower():
-                    api_key = v.strip()
+                    api_key = _norm_key(v)
                     break
         default_message = (
             "안녕하세요. 가상 피팅 도우미예요. "

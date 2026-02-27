@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import './ResultViewer.css';
 import ModelViewer from './ModelViewer';
-import VoiceOutput from './VoiceOutput';
 
-function ResultViewer({ result, image }) {
+function ResultViewer({ result, image, personImage }) {
   const [thoughtsExpanded, setThoughtsExpanded] = useState(false);
   if (!result) {
     return (
@@ -24,9 +23,10 @@ function ResultViewer({ result, image }) {
   const planId = result.plan_id || '';
   const thoughts = result.thoughts || {};
 
-  // 최종 결과에서 렌더링 이미지 경로 추출
-  const renderImagePath = finalResult?.result?.visualization?.image_path || 
+  // 최종 결과에서 렌더링 이미지 경로 추출 (Try-On 결과 image_path 포함)
+  const renderImagePath = finalResult?.result?.visualization?.image_path ||
                           finalResult?.result?.render_path ||
+                          finalResult?.result?.image_path ||
                           data.visualization?.image_path ||
                           data.render_path;
 
@@ -117,7 +117,6 @@ function ResultViewer({ result, image }) {
       {finalMessage && (
         <div className="result-message">
           <p>{finalMessage}</p>
-          <VoiceOutput text={finalMessage} />
         </div>
       )}
 
@@ -125,6 +124,9 @@ function ResultViewer({ result, image }) {
       {renderImagePath && (
         <div className="render-section">
           <h3>최종 렌더링 결과</h3>
+          {(finalMessage && (finalMessage.includes('의류 이미지를 표시') || finalMessage.includes('합성 이미지 생성이 지원되지 않'))) && (
+            <p className="render-section-notice">합성 이미지가 생성되지 않아 업로드한 의류를 표시합니다. 의류 + 인물 두 장을 올리면 가상 피팅 합성이 시도됩니다.</p>
+          )}
           <div className="render-container">
             <img 
               src={`http://localhost:8000/api/v1/file?path=${encodeURIComponent(renderImagePath)}`}

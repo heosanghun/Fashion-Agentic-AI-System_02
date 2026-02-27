@@ -222,6 +222,16 @@
   margin-bottom: 0.75rem;
 }
 
+.render-section-notice {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-secondary, #c4a77d);
+}
+
 .render-container {
   display: flex;
   justify-content: center;

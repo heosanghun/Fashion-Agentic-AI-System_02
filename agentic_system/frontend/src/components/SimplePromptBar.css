@@ -217,16 +217,34 @@
 }
 
 .simple-prompt-attach-preview {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.5rem 0.75rem;
   margin-top: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: var(--bg-input);
-  border-radius: 999px;
+  border-radius: var(--radius-lg);
   font-size: 0.85rem;
   color: var(--text-secondary);
   max-width: 100%;
+}
+
+.simple-prompt-attach-preview-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-card);
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+}
+
+.simple-prompt-attach-hint {
+  width: 100%;
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .simple-prompt-attach-preview img {

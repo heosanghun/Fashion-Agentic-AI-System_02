@@ -46,14 +46,21 @@ if "GEMINI_API_KEY" not in os.environ:
         pass
 print(f"[API] GEMINI_API_KEY 설정 여부: {'예' if os.environ.get('GEMINI_API_KEY') else '아니오 (Mock 동작)'}")
 
-# OpenAI API 키 (대화 의도 시 LLM 응답용) — 여러 이름·BOM 대비
+# OpenAI API 키 (대화 의도 시 LLM 응답용) — 여러 이름·BOM·줄바꿈 제거
+def _normalize_key(s: str) -> str:
+    if not s:
+        return ""
+    return s.replace("\r", "").replace("\n", "").strip()
+
 def _get_openai_key():
-    key = (os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "").strip()
+    key = _normalize_key(os.environ.get("OpenAI_API_Key") or os.environ.get("OPENAI_API_KEY") or "")
     if key:
         return key
     for k, v in os.environ.items():
         if v and "openai" in k.lower() and "key" in k.lower():
-            return v.strip()
+            key = _normalize_key(v)
+            if key:
+                return key
     return ""
 
 _openai_key = _get_openai_key()
@@ -123,41 +130,107 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.post("/api/v1/tryon")
+async def tryon_direct(
+    image: UploadFile = File(..., description="입을 옷 사진 (의류)"),
+    person_image: UploadFile = File(..., description="내 사진 (인물)"),
+    session_id: Optional[str] = Form(None),
+):
+    """
+    직통 가상 피팅 API — Agent/실행 계획 경유 없이 Gemini Try-On만 호출합니다.
+    POC 뼈대(Agent 1 → Agent 2 → 실행 계획)로 인한 context 누락 여부를 검증할 때 사용하세요.
+    """
+    try:
+        sid = session_id or "direct"
+        upload_dir = project_root / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        path_garment = (upload_dir / f"{sid}_garment_{image.filename}").resolve()
+        path_person = (upload_dir / f"{sid}_person_{person_image.filename}").resolve()
+        with open(path_garment, "wb") as f:
+            f.write(await image.read())
+        with open(path_person, "wb") as f:
+            f.write(await person_image.read())
+        image_path = str(path_garment)
+        person_image_path = str(path_person)
+        if not path_garment.exists() or not path_person.exists():
+            print(f"[API /tryon] 경고: 파일 미존재 garment={path_garment.exists()}, person={path_person.exists()}")
+        print(f"[API /tryon] 직통 Try-On: image_path={image_path}, person_image_path={person_image_path}")
+
+        params = {
+            "image_path": image_path,
+            "person_image_path": person_image_path,
+            "text_description": "입혀줘",
+        }
+        context = {
+            "image_path": image_path,
+            "person_image_path": person_image_path,
+            "text": "입혀줘",
+        }
+        tool_result = gemini_tryon_tool("try_on", params, context)
+
+        result = {
+            "status": tool_result.get("status", "success"),
+            "message": tool_result.get("message", ""),
+            "data": {
+                "steps": {"1": {"result": tool_result}},
+                "final_result": {"result": tool_result},
+                "plan_id": "direct_tryon",
+            },
+            "visualization": {},
+            "chat_only": False,
+        }
+        response = custom_ui.format_output(result)
+        return JSONResponse(content=response)
+    except Exception as e:
+        import traceback
+        print(f"[API /tryon] 오류: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/request")
 async def process_request(
     text: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
+    person_image: Optional[UploadFile] = File(None),
     user_id: Optional[str] = Form(None),
     session_id: Optional[str] = Form(None)
 ):
     """
     사용자 요청 처리
     
-    전체 Agentic AI 프로세스 실행:
-    1. 인식 (Perception): 사용자 입력 처리
-    2. 판단 (Judgment): 계획 수립 및 실행 계획 생성
-    3. 행동 (Action): 도구 실행 및 결과 반환
+    - image: 입을 옷 사진 (의류 이미지)
+    - person_image: 내 사진 (인물 이미지)
+    가상 피팅(Try-On) 시 두 이미지 모두 있으면 더 정확한 결과를 위해 사용됩니다.
     """
     try:
-        print(f"[API] 요청 수신: text={text is not None}, image={image is not None}, session_id={session_id}")
+        sid = session_id or "temp"
+        print(f"[API] 요청 수신: text={text is not None}, image={image is not None}, person_image={person_image is not None}, session_id={sid}")
         
-        # 이미지 파일 저장 (있는 경우)
+        upload_dir = project_root / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
         image_path = None
+        person_image_path = None
         if image:
-            upload_dir = project_root / "uploads"
-            upload_dir.mkdir(parents=True, exist_ok=True)
-            image_path = upload_dir / f"{session_id or 'temp'}_{image.filename}"
-            with open(image_path, "wb") as f:
-                content = await image.read()
-                f.write(content)
-            image_path = str(image_path)
-            print(f"[API] 이미지 저장 완료: {image_path}")
-        
+            path = upload_dir / f"{sid}_garment_{image.filename}"
+            with open(path, "wb") as f:
+                f.write(await image.read())
+            image_path = str(path)
+            print(f"[API] 의류 이미지 저장: {image_path}")
+        if person_image:
+            path = upload_dir / f"{sid}_person_{person_image.filename}"
+            with open(path, "wb") as f:
+                f.write(await person_image.read())
+            person_image_path = str(path)
+            print(f"[API] 인물 이미지 저장: {person_image_path}")
+        if person_image_path:
+            print("[API] person_image_path 있음 → Try-On 시 Gemini 인물+의류 합성 가능")
         # Custom UI를 통한 입력 처리
         print("[API] Custom UI 입력 처리 시작...")
         payload = custom_ui.process_user_input(
             text=text,
             image_path=image_path,
+            person_image_path=person_image_path,
             user_id=user_id,
             session_id=session_id
         )

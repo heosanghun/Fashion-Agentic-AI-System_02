@@ -44,6 +44,7 @@ class CustomUI:
         self, 
         text: Optional[str] = None,
         image_path: Optional[str] = None,
+        person_image_path: Optional[str] = None,
         image_data: Optional[bytes] = None,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None
@@ -53,23 +54,22 @@ class CustomUI:
         
         Args:
             text: 사용자 텍스트 입력
-            image_path: 이미지 파일 경로
+            image_path: 의류 이미지 경로 (입을 옷)
+            person_image_path: 인물 이미지 경로 (내 사진)
             image_data: 이미지 바이너리 데이터
             user_id: 사용자 ID
             session_id: 세션 ID
-            
-        Returns:
-            JSONPayload: 구조화된 JSON 페이로드
         """
         # 입력 검증
-        if not text and not image_path and not image_data:
+        if not text and not image_path and not person_image_path and not image_data:
             raise ValueError("텍스트 또는 이미지 중 하나는 필수입니다.")
         
-        # 입력 데이터 구조화
+        # 입력 데이터 구조화 (Try-On: image_path=의류, person_image_path=인물)
         input_data = {
             "text": text,
             "image_path": image_path,
-            "has_image": bool(image_path or image_data)
+            "person_image_path": person_image_path,
+            "has_image": bool(image_path or person_image_path or image_data)
         }
         
         # 이미지 데이터가 있으면 포함
@@ -109,17 +109,46 @@ class CustomUI:
             Dict: 사용자용 결과 데이터
         """
         data = result.get("data", {})
+        visualization = dict(result.get("visualization", {}))
+        # Try-On 등 도구 결과의 image_path를 visualization에 반영 (프론트 표시용)
+        final_result = data.get("final_result", result.get("final_result", {}))
+        step_result = final_result.get("result", {}) if isinstance(final_result, dict) else {}
+        # steps["1"].result에서도 image_path 추출 (구조에 따라 다를 수 있음)
+        if not isinstance(step_result, dict):
+            step_result = {}
+        steps_data = data.get("steps", result.get("steps", {}))
+        if not step_result.get("image_path") and isinstance(steps_data, dict):
+            first_step = steps_data.get("1", {})
+            first_result = first_step.get("result", {}) if isinstance(first_step, dict) else {}
+            if isinstance(first_result, dict) and first_result.get("image_path"):
+                step_result = first_result
+        # garment_only_fallback(의류만/합성 실패)인 경우 합성 결과가 아니므로 이미지로 표시하지 않음
+        if isinstance(step_result, dict) and step_result.get("garment_only_fallback"):
+            if isinstance(final_result, dict) and isinstance(final_result.get("result"), dict):
+                final_result["result"]["image_path"] = None
+            if isinstance(steps_data, dict) and isinstance(steps_data.get("1"), dict) and isinstance(steps_data["1"].get("result"), dict):
+                steps_data["1"]["result"]["image_path"] = None
+        elif isinstance(step_result, dict) and step_result.get("image_path"):
+            # Windows 경로를 URL/JSON에서 안전하게 쓰기 위해 슬래시로 통일
+            normalized_path = step_result["image_path"].replace("\\", "/")
+            visualization["image_path"] = normalized_path
+            if isinstance(final_result, dict) and isinstance(final_result.get("result"), dict):
+                final_result["result"]["image_path"] = normalized_path
+        # Try-On 전용 모드에서는 대화(OpenAI) 미사용이므로 오류 문구 제거해 화면에 안 나오게 함
+        import os
+        try_on_only = os.environ.get("TRY_ON_ONLY", "").strip().lower() in ("1", "true", "yes")
+        openai_error = None if try_on_only else result.get("openai_error")
         return {
             "status": result.get("status", "unknown"),
             "message": result.get("message", ""),
             "data": data,
-            "visualization": result.get("visualization", {}),
+            "visualization": visualization,
             "thoughts": result.get("thoughts", {}),
             "steps": data.get("steps", result.get("steps", {})),
             "final_result": data.get("final_result", result.get("final_result", {})),
             "plan_id": data.get("plan_id", result.get("plan_id")),
             "chat_only": result.get("chat_only", False),
-            "openai_used": result.get("openai_used"),
-            "openai_error": result.get("openai_error"),
+            "openai_used": result.get("openai_used") if not try_on_only else None,
+            "openai_error": openai_error,
         }
 
