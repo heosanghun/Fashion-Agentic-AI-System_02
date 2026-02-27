@@ -31,6 +31,8 @@ jobs:
 
       - name: Build
         working-directory: agentic_system/frontend
+        env:
+          VITE_BASE_PATH: '/Fashion-Agentic-AI-System_01/'
         run: npm run build
 
       - name: Upload artifact
